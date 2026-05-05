@@ -1,0 +1,179 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+import json
+from datetime import datetime
+
+class ExpenseTracker:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Expense Tracker")
+        self.data = []
+        self.load_data()
+        self.create_widgets()
+
+    def create_widgets(self):
+        # Поля ввода
+        tk.Label(self.root, text="Сумма:").grid(row=0, column=0)
+        self.sum_entry = tk.Entry(self.root)
+        self.sum_entry.grid(row=0, column=1)
+
+        tk.Label(self.root, text="Категория:").grid(row=1, column=0)
+        self.cat_entry = tk.Entry(self.root)
+        self.cat_entry.grid(row=1, column=1)
+
+        tk.Label(self.root, text="Дата (ГГГГ-ММ-ДД):").grid(row=2, column=0)
+        self.date_entry = tk.Entry(self.root)
+        self.date_entry.grid(row=2, column=1)
+
+        # Кнопки
+        tk.Button(self.root, text="Добавить расход", command=self.add_expense).grid(row=3, column=0, columnspan=2)
+
+        # Таблица расходов
+        self.tree = ttk.Treeview(self.root, columns=("sum", "cat", "date"), show='headings')
+        self.tree.heading("sum", text="Сумма")
+        self.tree.heading("cat", text="Категория")
+        self.tree.heading("date", text="Дата")
+        self.tree.grid(row=4, column=0, columnspan=2)
+
+        # Фильтры
+        tk.Label(self.root, text="Фильтр по категории:").grid(row=5, column=0)
+        self.filter_cat = tk.Entry(self.root)
+        self.filter_cat.grid(row=5, column=1)
+
+        tk.Label(self.root, text="Период с:").grid(row=6, column=0)
+        self.date_from = tk.Entry(self.root)
+        self.date_from.grid(row=6, column=1)
+
+        tk.Label(self.root, text="по:").grid(row=7, column=0)
+        self.date_to = tk.Entry(self.root)
+        self.date_to.grid(row=7, column=1)
+
+        tk.Button(self.root, text="Применить фильтр", command=self.apply_filter).grid(row=8, column=0, columnspan=2)
+
+        # Подсчёт суммы
+        tk.Button(self.root, text="Посчитать сумму", command=self.calculate_sum).grid(row=9, column=0, columnspan=2)
+        self.sum_label = tk.Label(self.root, text="Сумма: ")
+        self.sum_label.grid(row=10, column=0, columnspan=2)
+
+    def add_expense(self):
+        try:
+            sum_ = float(self.sum_entry.get())
+            if sum_ <= 0:
+                raise ValueError("Сумма должна быть положительной")
+            cat = self.cat_entry.get()
+            date = self.date_entry.get()
+            datetime.strptime(date, "%Y-%m-%d")
+            self.data.append({"sum": sum_, "cat": cat, "date": date})
+            self.save_data()
+            self.update_table()
+            self.sum_entry.delete(0, tk.END)
+            self.cat_entry.delete(0, tk.END)
+            self.date_entry.delete(0, tk.END)
+        except Exception as e:
+            messagebox.showerror("Ошибка", str(e))
+
+    def update_table(self):
+        for i in self.tree.get_children():
+            self.tree.delete(i)
+        for item in self.data:
+            self.tree.insert("", "end", values=(item["sum"], item["cat"], item["date"]))
+
+    def apply_filter(self):
+        cat = self.filter_cat.get().lower()
+        date_from = self.date_from.get()
+        date_to = self.date_to.get()
+        filtered = self.data
+        if cat:
+            filtered = [x for x in filtered if cat in x["cat"].lower()]
+        if date_from:
+            filtered = [x for x in filtered if x["date"] >= date_from]
+        if date_to:
+            filtered = [x for x in filtered if x["date"] <= date_to]
+        for i in self.tree.get_children():
+            self.tree.delete(i)
+        for item in filtered:
+            self.tree.insert("", "end", values=(item["sum"], item["cat"], item["date"]))
+
+    def calculate_sum(self):
+        date_from = self.date_from.get()
+        date_to = self.date_to.get()
+        filtered = self.data
+        if date_from:
+            filtered = [x for x in filtered if x["date"] >= date_from]
+        if date_to:
+            filtered = [x for x in filtered if x["date"] <= date_to]
+        total = sum(x["sum"] for x in filtered)
+        self.sum_label.config(text=f"Сумма: {total}")
+
+    def save_data(self):
+        with open("data.json", "w") as f:
+            json.dump(self.data, f)
+
+    def load_data(self):
+        try:
+            with open("data.json", "r") as f:
+                self.data = json.load(f)
+                self.update_table()
+                self.calculate_sum()
+                return True
+        except FileNotFoundError:
+            return False
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = ExpenseTracker(root)
+    root.mainloop()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  - Введите даты начала и конца периода.
+  - Нажмите «Применить фильтр».
+- **Подсчёт суммы:**
+  - Введите даты периода.
+  - Нажмите «Посчитать сумму».
+- **Сохранение и загрузка:**
+  - Данные сохраняются автоматически в data.json.
